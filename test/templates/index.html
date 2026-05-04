@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversion Tester</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; background: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #1c1e21; margin-top: 0; }
+        label { font-weight: 600; display: block; margin-top: 20px; color: #4b4f56; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { background: #007bff; color: white; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; width: 100%; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; }
+        #result { margin-top: 25px; padding: 20px; border-radius: 8px; display: none; border-left: 5px solid; }
+        .success { background: #e7f3ff; border-color: #007bff; color: #0056b3; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .error { background: #fbeaea; border-color: #d93025; color: #a50e0e; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-size: 13px; background: #282c34; color: #abb2bf; padding: 15px; border-radius: 5px; margin-top: 10px; border: 1px solid #3e4451; }
+        code { font-family: monospace; background: #eee; padding: 2px 4px; border-radius: 3px; color: #d63384; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Conversion Postback Tester</h2>
+    <p>Simulate a click to capture a real ID and fire the postback automatically.</p>
+    
+    <label>Test Link</label>
+    <input type="text" id="test_link" placeholder="Enter link here...">
+
+    <label>Postback Template</label>
+    <input type="text" id="postback_template" placeholder="Enter postback URL with {clickid}...">
+
+    <button onclick="fireConversion()">Run Test</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+async function fireConversion() {
+    const btn = document.querySelector('button');
+    const resDiv = document.getElementById('result');
+    
+    btn.disabled = true;
+    btn.innerText = "Processing Click & Postback...";
+    resDiv.style.display = "none";
+
+    const formData = new FormData();
+    formData.append('test_link', document.getElementById('test_link').value);
+    formData.append('postback_template', document.getElementById('postback_template').value);
+
+    try {
+        const response = await fetch('/fire-test', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        resDiv.style.display = "block";
+        resDiv.className = data.status; 
+        
+        if(data.status !== "error") {
+            resDiv.innerHTML = `
+                <strong>Action Complete</strong><br>
+                Captured ID: <code>${data.captured_id}</code><br>
+                HTTP Status: <code>${data.http_code}</code><br><br>
+                <strong>Full Server Response:</strong>
+                <pre>${data.server_response}</pre>
+                <br>
+                <small style="color:#666;">Fired URL: ${data.fired_postback_url}</small>
+            `;
+        } else {
+            resDiv.innerHTML = `<strong>Error:</strong> ${data.message}`;
+        }
+    } catch (e) {
+        resDiv.className = "error";
+        resDiv.innerHTML = "<strong>Error:</strong> Connection to backend failed.";
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Run Test";
+    }
+}
+</script>
+
+</body>
+</html>
